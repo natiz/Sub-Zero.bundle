@@ -10,6 +10,7 @@ provider_manager = RegistrableExtensionManager('subliminal.providers', [
     'podnapisi = subliminal_patch.providers.podnapisi:PodnapisiProvider',
     'shooter = subliminal.providers.shooter:ShooterProvider',
     'subscenter = subliminal.providers.subscenter:SubsCenterProvider',
+    'subscene = subliminal_patch.providers.subscenter:SubsceneProvider',
     'thesubdb = subliminal.providers.thesubdb:TheSubDBProvider',
     'tvsubtitles = subliminal_patch.providers.tvsubtitles:TVsubtitlesProvider'
 ])
