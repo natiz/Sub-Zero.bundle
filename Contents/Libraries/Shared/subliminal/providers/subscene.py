@@ -89,6 +89,7 @@ class SubsceneProvider(Provider):
 
     server_url = 'https://subscene.com'
     languages = supported_languages
+    subtitle_class = SubsceneSubtitle
 
     def initialize(self):
         logger.info("Creating session")
@@ -197,7 +198,7 @@ class SubsceneProvider(Provider):
             kwargs["page_link"] = tr.a.get("href")
             kwargs["name"] = tr.span.find_next("span").text.strip()
             kwargs["hearing_impaired"] = bool(tr.find("td", "a41"))
-            subtitles.append(SubsceneSubtitle(**kwargs))
+            subtitles.append(self.subtitle_class(**kwargs))
 
         logger.debug("%s subtitles found" % len(subtitles))
         return subtitles
