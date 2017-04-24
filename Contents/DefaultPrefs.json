@@ -299,6 +299,12 @@
     "default": "true"
   },
   {
+    "id": "provider.subscene.enabled",
+    "label": "Provider: Enable SubScene (work in progress)",
+    "type": "bool",
+    "default": "false"
+  },
+  {
     "id": "provider.opensubtitles.use_tags",
     "label": "I keep the exact (release-) filename of my media files",
     "type": "bool",

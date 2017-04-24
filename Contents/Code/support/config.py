@@ -332,7 +332,8 @@ class Config(object):
                      'podnapisi': cast_bool(Prefs['provider.podnapisi.enabled']),
                      'addic7ed': cast_bool(Prefs['provider.addic7ed.enabled']),
                      'tvsubtitles': cast_bool(Prefs['provider.tvsubtitles.enabled']),
-                     'legendastv': cast_bool(Prefs['provider.legendastv.enabled'])
+                     'legendastv': cast_bool(Prefs['provider.legendastv.enabled']),
+                     'subscene': cast_bool(Prefs['provider.subscene.enabled']),
                      }
 
         # ditch non-forced-subtitles-reporting providers
@@ -359,6 +360,9 @@ class Config(object):
                              'legendastv': {'username': Prefs['provider.legendastv.username'],
                                             'password': Prefs['provider.legendastv.password'],
                                             },
+                             'subscene': {
+
+                             },
                              }
 
         return provider_settings
