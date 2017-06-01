@@ -371,12 +371,14 @@ class PMSMediaProxy(object):
         :return:
         """
         m = self.mediatree
-        parts = []
+        parts = {}
         while 1:
             if m.items:
                 media_item = m.items[0]
+                if media_item.parts:
+                    parts[m] = []
                 for part in media_item.parts:
-                    parts.append(part)
+                    parts[m].append(part)
                 break
 
             if not m.children:

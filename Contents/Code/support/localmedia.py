@@ -186,6 +186,10 @@ def find_subtitles(part):
                     lang_sub_map[language] = []
                 lang_sub_map[language] = lang_sub_map[language] + sub_list
 
+    print lang_sub_map, set(part.subtitles.keys()) - set(lang_sub_map.keys())
+    print getattr(getattr(part.subtitles, "_lang_dirs")["en"], "_proxies")
+
+
     # Now whack subtitles that don't exist anymore.
     for language in lang_sub_map.keys():
         part.subtitles[language].validate_keys(lang_sub_map[language])

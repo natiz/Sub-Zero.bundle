@@ -57,7 +57,7 @@ def ItemDetailsMenu(rating_key, title=None, base_title=None, item_title=None, ra
 
     oc.add(DirectoryObject(
         key=Callback(UpdateLocalMedia, rating_key=rating_key, title=title, item_title=item_title, base_title=base_title,
-                     randomize=timestamp()),
+                     current_kind=current_kind, randomize=timestamp()),
         title=u"Find local subtitles (doesn't refresh metadata)",
         summary="Searches for locally available subtitles",
         thumb=item.thumb or default_thumb
@@ -157,9 +157,46 @@ def ItemDetailsMenu(rating_key, title=None, base_title=None, item_title=None, ra
 def UpdateLocalMedia(**kwargs):
     from support.localmedia import find_subtitles
     rating_key = kwargs["rating_key"]
-    parts = PMSMediaProxy(rating_key).get_all_parts()
-    for part in parts:
-        find_subtitles(part)
+    item_kind = kwargs.pop("current_kind")
+
+    media_proxy = PMSMediaProxy(rating_key)
+    #mediatree = media_proxy.mediatree
+    all_parts = media_proxy.get_all_parts()
+
+    #media_cls = getattr(Media, "_class_named")("Movie")
+    #print getattr(Media, "_class_named")("Movie"), getattr(Media, "_class_named")("Episode"), getattr(Media, "_class_named")("TV_Show")
+    model_accessor = getattr(Core, "_metadata_model_accessor")
+    access_point = model_accessor.get_access_point(Core.identifier)
+    #print getattr(access_point, "_classes")
+    cls = getattr(Media, "_class_named")("TV_Show")
+    metadata_cls = getattr(access_point, getattr(cls, "_model_name"))
+    print all_parts.keys()[0]
+    #obj = metadata_cls[all_parts.keys()[0].guid]
+    obj = metadata_cls[media_proxy.mediatree.guid]
+
+    print dir(obj), obj.id, obj.guid, obj.provider
+
+    #setattr(obj, "_id", rating_key)
+    #print obj.id
+
+    if obj:
+        # for mediatree, parts in all_parts.iteritems():
+        #     print mediatree, dir(mediatree), mediatree.guid, mediatree.items[0]
+        #     for part in parts:
+        #         find_subtitles(part)
+        m = media_proxy.mediatree
+        while 1:
+            if m.items:
+                for media_item in m.items:
+                    for part in media_item.parts:
+                        print part
+                        find_subtitles(part)
+
+            if not m.children:
+                break
+
+            m = m.children[0]
+        getattr(obj, "_write")()
 
     kwargs.pop("randomize")
 
