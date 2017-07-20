@@ -15,8 +15,11 @@ for key, value in getattr(module, "__builtins__").iteritems():
 
 import logger
 
+from subzero.constants import DEPENDENCY_MODULE_NAMES
+logger.register_logging_handler(DEPENDENCY_MODULE_NAMES, level="DEBUG")
 sys.modules["logger"] = logger
 
+import subliminal
 import support
 
 import interface
@@ -40,7 +43,8 @@ def Start():
     HTTP.CacheTime = 0
     HTTP.Headers['User-agent'] = OS_PLEX_USERAGENT
 
-    config.init_cache()
+    #config.init_cache()
+    subliminal.region.configure('dogpile.cache.memory')
 
     # clear expired intents
     intent = get_intent()
