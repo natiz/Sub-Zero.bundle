@@ -80,7 +80,8 @@ def Start():
     scheduler.run()
 
     # bind activities
-    Thread.Create(activity.start)
+    if config.enable_channel:
+        Thread.Create(activity.start)
 
     if "anon_id" not in Dict:
         Dict["anon_id"] = get_identifier()
