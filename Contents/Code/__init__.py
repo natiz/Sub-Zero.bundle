@@ -4,7 +4,7 @@ import datetime
 import os
 import logging
 
-log = logging.getLogger()
+log = logging.getLogger("__init__")
 log.error("Logger started")
 
 from subzero.sandbox import restore_builtins
