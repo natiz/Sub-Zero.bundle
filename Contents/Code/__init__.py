@@ -2,6 +2,10 @@
 import sys
 import datetime
 import os
+import logging
+
+log = logging.getLogger(__name__)
+log.error("Logger started")
 
 from subzero.sandbox import restore_builtins
 
@@ -19,12 +23,12 @@ from subzero.constants import DEPENDENCY_MODULE_NAMES
 logger.register_logging_handler(DEPENDENCY_MODULE_NAMES, level="DEBUG")
 sys.modules["logger"] = logger
 
-Log.Error("Hello!")
+log.error("Hello!")
 
 import subliminal
-Log.Error("after subliminal")
+log.error("after subliminal")
 import support
-Log.Error("after support")
+log.error("after support")
 
 import interface
 sys.modules["interface"] = interface
