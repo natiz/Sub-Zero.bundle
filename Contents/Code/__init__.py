@@ -19,8 +19,12 @@ from subzero.constants import DEPENDENCY_MODULE_NAMES
 logger.register_logging_handler(DEPENDENCY_MODULE_NAMES, level="DEBUG")
 sys.modules["logger"] = logger
 
+Log.Error("Hello!")
+
 import subliminal
+Log.Error("after subliminal")
 import support
+Log.Error("after support")
 
 import interface
 sys.modules["interface"] = interface
