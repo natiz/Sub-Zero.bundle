@@ -156,6 +156,9 @@ def RefreshMissing(randomize=None):
 def ValidatePrefs():
     Core.log.setLevel(logging.DEBUG)
 
+    # load locale
+    #Localization.
+
     if Prefs["log_console"]:
         Core.log.addHandler(logger.console_handler)
         Log.Debug("Logging to console from now on")

@@ -117,7 +117,7 @@ def update_local_media(metadata, media, media_type="movies"):
 class SubZeroAgent(object):
     agent_type = None
     agent_type_verbose = None
-    languages = [Locale.Language.English]
+    languages = [Locale.Language.English, Locale.Language.German]
     primary_provider = False
     score_prefs_key = None
 
