@@ -1,5 +1,5 @@
 # coding=utf-8
-
+from subzero.sandbox import show_callers_locals
 from subzero.constants import PREFIX, TITLE, ART
 from support.config import config
 from support.helpers import pad_title, timestamp, df, get_plex_item_display_title
@@ -26,6 +26,9 @@ def fatality(randomize=None, force_title=None, header=None, message=None, only_r
     oc = ObjectContainer(title1=title, title2=title, header=unicode(header) if header else title, message=message,
                          no_history=no_history,
                          replace_parent=replace_parent, no_cache=True)
+
+    print Core, dir(Core.runtime)#, getattr(Locale, "_context"), getattr(Locale, "_context").locale, getattr(Locale, "_context").request
+    print show_callers_locals()
 
     # always re-check permissions
     config.refresh_permissions_status()

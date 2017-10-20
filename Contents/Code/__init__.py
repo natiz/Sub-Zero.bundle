@@ -46,6 +46,8 @@ def Start():
     intent = get_intent()
     intent.cleanup()
 
+    print "YOLO", getattr(Locale, "_context").request
+
     # clear expired menu history items
     now = datetime.datetime.now()
     if "menu_history" in Dict:
