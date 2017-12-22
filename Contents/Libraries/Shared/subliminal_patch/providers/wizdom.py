@@ -11,12 +11,15 @@ from babelfish import Language
 from guessit import guessit
 from requests import Session
 
-from ..cache import region, SHOW_EXPIRATION_TIME
-from ..exceptions import ProviderError
-from ..providers import Provider
-from ..subtitle import fix_line_ending, guess_matches, Subtitle
-from ..utils import sanitize
-from ..video import Episode, Movie
+
+
+from subliminal_patch.providers import Provider
+from subliminal_patch.subtitle import Subtitle
+from subliminal.exceptions import ProviderError
+from subliminal.utils import sanitize
+from subliminal.subtitle import fix_line_ending, guess_matches
+from subliminal.video import Episode, Movie
+from subliminal.cache import region, SHOW_EXPIRATION_TIME
 
 logger = logging.getLogger(__name__)
 
