@@ -482,6 +482,7 @@ class Config(object):
                      'napiprojekt': cast_bool(Prefs['provider.napiprojekt.enabled']),
                      'shooter': cast_bool(Prefs['provider.shooter.enabled']),
                      'subscenter': False,
+                     'wizdom': cast_bool(Prefs['provider.wizdom.enabled']),
                      }
 
         # ditch non-forced-subtitles-reporting providers
@@ -493,6 +494,7 @@ class Config(object):
             providers["shooter"] = False
             providers["titlovi"] = False
             providers["subscenter"] = False
+            providers["wizdom"] = False
 
         return filter(lambda prov: providers[prov], providers)
 

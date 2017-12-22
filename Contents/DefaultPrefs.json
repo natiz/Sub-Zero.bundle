@@ -203,6 +203,12 @@
     "default": "true"
   },
   {
+    "id": "provider.wizdom.enabled",
+    "label": "Provider: Enable Wizdom",
+    "type": "bool",
+    "default": "true"
+  },
+  {
     "id": "provider.opensubtitles.enabled",
     "label": "Provider: Enable OpenSubtitles",
     "type": "bool",
