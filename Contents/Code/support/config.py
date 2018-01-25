@@ -481,7 +481,7 @@ class Config(object):
                      'legendastv': cast_bool(Prefs['provider.legendastv.enabled']),
                      'napiprojekt': cast_bool(Prefs['provider.napiprojekt.enabled']),
                      'shooter': cast_bool(Prefs['provider.shooter.enabled']),
-                     'subscenter': False,
+                     'subscenter': cast_bool(Prefs['provider.subscenter.enabled']),
                      'wizdom': cast_bool(Prefs['provider.wizdom.enabled']),
                      }
 
@@ -515,7 +515,11 @@ class Config(object):
                              'legendastv': {'username': Prefs['provider.legendastv.username'],
                                             'password': Prefs['provider.legendastv.password'],
                                             },
-                             }
+                             },
+        'subscenter': {'username': Prefs['provider.subscenter.username'],
+                       'password': Prefs['provider.subscenter.password'],
+                       },
+        }
 
         return provider_settings
 

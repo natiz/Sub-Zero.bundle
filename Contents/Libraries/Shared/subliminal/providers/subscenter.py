@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import bisect
-from collections import defaultdict
 import io
-import json
 import logging
 import zipfile
 
@@ -10,9 +7,8 @@ from babelfish import Language
 from guessit import guessit
 from requests import Session
 
-from . import ParserBeautifulSoup, Provider
+
 from .. import __short_version__
-from ..cache import SHOW_EXPIRATION_TIME, region
 from ..exceptions import AuthenticationError, ConfigurationError, ProviderError
 from ..subtitle import Subtitle, fix_line_ending, guess_matches
 from ..utils import sanitize
@@ -75,169 +71,152 @@ class SubsCenterSubtitle(Subtitle):
 class SubsCenterProvider(Provider):
     """SubsCenter Provider."""
     languages = {Language.fromalpha2(l) for l in ['he']}
-    server_url = 'http://www.subscenter.org/he/'
+    server_url = 'http://www.cinemast.org/he/cinemast/api/'
     subtitle_class = SubsCenterSubtitle
 
     def __init__(self, username=None, password=None):
-        if username is not None and password is None or username is None and password is not None:
+        if not (username and password):
             raise ConfigurationError('Username and password must be specified')
 
         self.session = None
         self.username = username
         self.password = password
-        self.logged_in = False
+        self.user_id = None
+        self.token = None
+        self.session = None
 
     def initialize(self):
         self.session = Session()
         self.session.headers['User-Agent'] = 'Subliminal/{}'.format(__short_version__)
 
         # login
-        if self.username is not None and self.password is not None:
-            logger.debug('Logging in')
-            url = self.server_url + 'subscenter/accounts/login/'
+        logger.debug('Logging in')
+        url = self.server_url + 'login/'
 
-            # retrieve CSRF token
-            self.session.get(url)
-            csrf_token = self.session.cookies['csrftoken']
+        # actual login
+        data = {'username': self.username, 'password': self.password}
+        r = self.session.post(url, data=data, allow_redirects=False, timeout=10)
 
-            # actual login
-            data = {'username': self.username, 'password': self.password, 'csrfmiddlewaretoken': csrf_token}
-            r = self.session.post(url, data, allow_redirects=False, timeout=10)
+        if r.status_code != 200:
+            raise AuthenticationError(self.username)
 
-            if r.status_code != 302:
+        try:
+            result = r.json()
+            if 'token' not in result:
                 raise AuthenticationError(self.username)
 
             logger.info('Logged in')
-            self.logged_in = True
+            self.user_id = r.json().get('user')
+            self.token = r.json().get('token')
+        except ValueError:
+            raise AuthenticationError(self.username)
+
+    @staticmethod
+    def _slugify_title(title):
+        return title.lower().replace(' ', '-').replace('\'', '').replace('"', '').replace('.', '').replace(';', '')
 
     def terminate(self):
         # logout
-        if self.logged_in:
-            logger.info('Logging out')
-            r = self.session.get(self.server_url + 'subscenter/accounts/logout/', timeout=10)
-            r.raise_for_status()
+        if self.token or self.user_id:
             logger.info('Logged out')
-            self.logged_in = False
+            self.token = None
+            self.user_id = None
 
         self.session.close()
 
-    @region.cache_on_arguments(expiration_time=SHOW_EXPIRATION_TIME)
-    def _search_url_titles(self, title):
-        """Search the URL titles by kind for the given `title`.
-
-        :param str title: title to search for.
-        :return: the URL titles by kind.
-        :rtype: collections.defaultdict
-
-        """
-        # make the search
-        logger.info('Searching title name for %r', title)
-        r = self.session.get(self.server_url + 'subtitle/search/', params={'q': title}, timeout=10)
-        r.raise_for_status()
-
-        # check for redirections
-        if r.history and all([h.status_code == 302 for h in r.history]):
-            logger.debug('Redirected to the subtitles page')
-            links = [r.url]
-        else:
-            # get the suggestions (if needed)
-            soup = ParserBeautifulSoup(r.content, ['lxml', 'html.parser'])
-            links = [link.attrs['href'] for link in soup.select('#processes div.generalWindowTop a')]
-            logger.debug('Found %d suggestions', len(links))
-
-        url_titles = defaultdict(list)
-        for link in links:
-            parts = link.split('/')
-            url_titles[parts[-3]].append(parts[-2])
-
-        return url_titles
-
-    def query(self, title, season=None, episode=None):
-        # search for the url title
-        url_titles = self._search_url_titles(title)
+    def query(self, title, season=None, episode=None, year=None):
+        query = {
+            'q': title,
+            'user': self.user_id,
+            'token': self.token
+        }
 
         # episode
         if season and episode:
-            if 'series' not in url_titles:
-                logger.error('No URL title found for series %r', title)
-                return []
-            url_title = url_titles['series'][0]
-            logger.debug('Using series title %r', url_title)
-            url = self.server_url + 'cst/data/series/sb/{}/{}/{}/'.format(url_title, season, episode)
-            page_link = self.server_url + 'subtitle/series/{}/{}/{}/'.format(url_title, season, episode)
+            query['type'] = 'series'
+            query['season'] = season
+            query['episode'] = episode
         else:
-            if 'movie' not in url_titles:
-                logger.error('No URL title found for movie %r', title)
-                return []
-            url_title = url_titles['movie'][0]
-            logger.debug('Using movie title %r', url_title)
-            url = self.server_url + 'cst/data/movie/sb/{}/'.format(url_title)
-            page_link = self.server_url + 'subtitle/movie/{}/'.format(url_title)
+            query['type'] = 'movies'
+            if year:
+                query['year_start'] = year - 1
+                query['year_end'] = year
 
         # get the list of subtitles
         logger.debug('Getting the list of subtitles')
-        r = self.session.get(url)
+        url = self.server_url + 'search/'
+        r = self.session.post(url, data=query)
         r.raise_for_status()
-        results = json.loads(r.text)
+
+        try:
+            results = r.json()
+        except ValueError:
+            return {}
 
         # loop over results
         subtitles = {}
-        for language_code, language_data in results.items():
-            for quality_data in language_data.values():
-                for quality, subtitles_data in quality_data.items():
-                    for subtitle_item in subtitles_data.values():
-                        # read the item
-                        language = Language.fromalpha2(language_code)
-                        hearing_impaired = bool(subtitle_item['hearing_impaired'])
-                        subtitle_id = subtitle_item['id']
-                        subtitle_key = subtitle_item['key']
-                        subtitle_version = subtitle_item['h_version']
-                        downloaded = subtitle_item['downloaded']
-                        release = subtitle_item['subtitle_version']
+        for group_data in results.get('data', []):
+            # create page link
+            slug_name = self._slugify_title(group_data.get('name_en'))
+            if query['type'] == 'series':
+                page_link = self.server_url + 'subtitle/series/{}/{}/{}/'.format(slug_name, season, episode)
+            else:
+                page_link = self.server_url + 'subtitle/movie/{}/'.format(slug_name)
 
-                        # add the release and increment downloaded count if we already have the subtitle
-                        if subtitle_id in subtitles:
-                            logger.debug('Found additional release %r for subtitle %d', release, subtitle_id)
-                            bisect.insort_left(subtitles[subtitle_id].releases, release)  # deterministic order
-                            subtitles[subtitle_id].downloaded += downloaded
-                            continue
+            # go over each language
+            for language_code, subtitles_data in group_data.get('subtitles', {}).items():
+                for subtitle_item in subtitles_data:
+                    # read the item
+                    language = Language.fromalpha2(language_code)
+                    subtitle_id = subtitle_item['id']
+                    subtitle_key = subtitle_item['key']
+                    release = subtitle_item['version']
 
-                        # otherwise create it
-                        subtitle = self.subtitle_class(language, hearing_impaired, page_link, title, season, episode,
-                                                      title, subtitle_id, subtitle_key, subtitle_version, downloaded,
-                                                      [release])
-                        logger.debug('Found subtitle %r', subtitle)
-                        subtitles[subtitle_id] = subtitle
+                    # otherwise create it
+                    subtitle = self.subtitle_class(language, False, page_link, title, season, episode, title, subtitle_id,
+                                                   subtitle_key, None, None, [release])
+                    logger.debug('Found subtitle %r', subtitle)
+                    subtitles[subtitle_id] = subtitle
 
         return subtitles.values()
 
     def list_subtitles(self, video, languages):
         season = episode = None
-        title = video.title
 
         if isinstance(video, Episode):
-            title = video.series
+            titles = [video.series]
             season = video.season
             episode = video.episode
+        else:
+            titles = [video.title]
 
-        return [s for s in self.query(title, season, episode) if s.language in languages]
+        for title in titles:
+            subtitles = [s for s in self.query(title, season, episode) if s.language in languages]
+            if subtitles:
+                return subtitles
+
+        return []
 
     def download_subtitle(self, subtitle):
         # download
-        url = self.server_url + 'subtitle/download/{}/{}/'.format(subtitle.language.alpha2, subtitle.subtitle_id)
-        params = {'v': subtitle.subtitle_version, 'key': subtitle.subtitle_key}
-        r = self.session.get(url, params=params, headers={'Referer': subtitle.page_link}, timeout=10)
+        url = self.server_url + 'subtitle/download/{}/'.format(subtitle.language.alpha2)
+        params = {
+            'v': subtitle.release,
+            'key': subtitle.subtitle_key,
+            'sub_id': subtitle.subtitle_id
+        }
+        data = {
+            'user': self.user_id,
+            'token': self.token
+        }
+        r = self.session.post(url, data=data, params=params, timeout=10)
         r.raise_for_status()
 
         # open the zip
-        try:
-            with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
-                # remove some filenames from the namelist
-                namelist = [n for n in zf.namelist() if not n.endswith('.txt')]
-                if len(namelist) > 1:
-                    raise ProviderError('More than one file to unzip')
+        with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
+            # remove some filenames from the namelist
+            namelist = [n for n in zf.namelist() if not n.endswith('.txt')]
+            if len(namelist) > 1:
+                raise ProviderError('More than one file to unzip')
 
-                subtitle.content = fix_line_ending(zf.read(namelist[0]))
-        except zipfile.BadZipfile:
-            # if no zip file was retrieved, daily downloads limit has exceeded
-            raise ProviderError('Daily limit exceeded')
+            subtitle.content = fix_line_ending(zf.read(namelist[0]))

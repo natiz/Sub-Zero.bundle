@@ -203,6 +203,26 @@
     "default": "true"
   },
   {
+    "id": "provider.subscenter.enabled",
+    "label": "Provider: Enable Subscenter",
+    "type": "bool",
+    "default": "true"
+  },
+  {
+    "id": "provider.subscenter.username",
+    "label": "Subscenter Username",
+    "type": "text",
+    "default": ""
+  },
+  {
+    "id": "provider.subscenter.password",
+    "label": "Subscenter Password",
+    "type": "text",
+    "option": "hidden",
+    "default": "",
+    "secure": "true"
+  },
+  {
     "id": "provider.wizdom.enabled",
     "label": "Provider: Enable Wizdom",
     "type": "bool",
